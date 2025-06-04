@@ -1,0 +1,13 @@
+# Terraform 관련
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+.terraform.lock.hcl
+
+# SSH Key
+keonho-key.pem
+
+# 기타
+*.swp
+*~
