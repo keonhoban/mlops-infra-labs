@@ -6,7 +6,7 @@ terraform.tfvars
 .terraform.lock.hcl
 
 # SSH Key
-keonho-key.pem
+# keonho-key.pem   # 다른 경로에서의 관리가 권장됨 (ex. ~/.ssh/)
 
 # 기타
 *.swp
