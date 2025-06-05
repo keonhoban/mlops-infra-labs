@@ -1,4 +1,4 @@
-# ☸️ Kubernetes Basic Lab - Helm 기초 실습
+# ☸️ Kubernetes Basic Lab - Helm 실습
 
 ## ✅ 목표
 
