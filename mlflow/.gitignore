@@ -1,0 +1,4 @@
+app/venv/
+fastapi_app/__pycache__
+mlartifacts
+mlruns
