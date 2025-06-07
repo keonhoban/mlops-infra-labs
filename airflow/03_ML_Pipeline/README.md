@@ -1,4 +1,4 @@
-# 🛠️ Airflow 실습 3단계 - ML 파이프라인 DAG 구성
+# 🛠️ Airflow Lab - ML Pipeline Dags
 
 ## ✅ 목표
 
