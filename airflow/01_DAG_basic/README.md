@@ -111,5 +111,5 @@ docker compose down --volumes --remove-orphans
 
 ```bash
 docker ps
-docker compose logs
+docker-compose logs
 ```
