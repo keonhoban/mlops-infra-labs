@@ -41,7 +41,7 @@ mkdir -p ./dags ./logs ./plugins
 echo -e "AIRFLOW_UID=$(id -u)" > .env
 
 # 컨테이너 실행
-docker compose up -d
+docker-compose up -d
 ```
 
 ---
@@ -97,7 +97,7 @@ with DAG(dag_id="hello_airflow",
 ## 🧹 리소스 정리
 
 ```bash
-docker compose down --volumes --remove-orphans
+docker-compose down --volumes --remove-orphans
 ```
 
 ---
