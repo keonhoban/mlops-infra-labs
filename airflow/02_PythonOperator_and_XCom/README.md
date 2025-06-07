@@ -23,7 +23,7 @@
 # dags/ 디렉토리에 python_bash_xcom.py 추가
 
 # Airflow 웹서버 및 스케줄러 실행 확인
-docker compose up -d
+docker-compose up -d
 
 # UI 접속
 http://localhost:8080
