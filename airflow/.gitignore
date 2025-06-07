@@ -1,0 +1,32 @@
+# Airflow 로그 & 데이터
+logs/
+plugins/__pycache__/
+dags/__pycache__/
+__pycache__/
+
+# 환경 설정
+.env
+config/*.json
+config/*.yaml
+config/*.yml
+
+# PyCharm, VSCode 등 IDE 설정
+.vscode/
+.idea/
+
+# Python 관련
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Docker 관련
+*.pid
+*.sock
+*.log
+
+# 기타
+.DS_Store
+*.swp
+*.bak
