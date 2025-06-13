@@ -1,0 +1,19 @@
+from fastapi import FastAPI
+import mlflow.pyfunc
+
+app = FastAPI()
+mlflow.set_tracking_uri("http://mlflow:5000")
+model = mlflow.pyfunc.load_model("models:/IrisModel/Production")
+
+@app.get("/")
+def home():
+    return {"message": "FastAPI + MLflow 예측 API"}
+
+@app.post("/predict")
+def predict(data: dict):
+    result = model.predict([list(data.values())])
+    return {"prediction": result.tolist()}
+
+# curl -X POST http://localhost:8000/predict \
+#     -H "Content-Type: application/json" \
+#     -d '{"sepal length (cm)": 5.1, "sepal width (cm)": 3.5, "petal length (cm)": 1.4, "petal width (cm)": 0.2}'

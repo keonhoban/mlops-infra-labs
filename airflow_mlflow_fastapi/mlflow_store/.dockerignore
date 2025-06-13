@@ -1,0 +1,18 @@
+# MLflow 저장 파일/디렉토리
+mlruns/
+mlflow.db
+artifacts/
+
+# 캐시 / 로그
+*.log
+*.db
+__pycache__/
+
+# Git & IDE
+.git/
+.vscode/
+.idea/
+
+# 기타 노트북 캐시
+.ipynb_checkpoints/
+*.ipynb
