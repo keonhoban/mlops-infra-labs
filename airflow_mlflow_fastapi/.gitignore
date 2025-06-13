@@ -1,0 +1,16 @@
+# MLflow 로그 디렉토리
+mlruns/
+
+# Python 관련
+__pycache__/
+*.pyc
+*.pyo
+
+# 환경 변수 파일
+.env
+
+# 기타 IDE
+.vscode/
+.idea/
+
+mlflow.db
