@@ -1,0 +1,70 @@
+# mlflow-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-server
+  namespace: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      containers:
+        - name: mlflow
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          ports:
+            - containerPort: 5000
+          command: ["mlflow", "server"]
+          args:
+            - "--backend-store-uri=postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+            - "--default-artifact-root={{ .Values.env.defaultArtifactRoot }}"
+            - "--host=0.0.0.0"
+            - "--port=5000"
+            - "--serve-artifacts"
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mlflow-db-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mlflow-db-secret
+                  key: password
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: mlflow-db-config
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: mlflow-db-config
+                  key: port
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: mlflow-db-config
+                  key: dbname
+          envFrom:
+            - secretRef:
+                name: aws-credentials-secret
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}

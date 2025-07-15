@@ -1,0 +1,29 @@
+replicaCount: 1
+
+image:
+  repository: hoizz/fastapi-ml
+  tag: mlflow-model-info
+  pullPolicy: IfNotPresent
+
+service:
+  name: fastapi-service
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  name: fastapi-ingress
+  host: fastapi.local
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+env:
+  MLFLOW_TRACKING_URI: "http://mlflow-service.mlflow.svc.cluster.local:5000"
+  MODEL_NAME: "my_model"
+  MODEL_STAGE: "Production"
+
+envFrom:
+  - secretRef:
+      name: aws-credentials-secret
+

@@ -1,0 +1,114 @@
+# 실행 엔진 설정
+executor: KubernetesExecutor
+
+# 이미지 설정
+images:
+  airflow:
+    repository: hoizz/airflow-custom  # 커스텀 이미지
+    tag: v5-mlflow-20240712           # 태그
+    pullPolicy: IfNotPresent
+
+# fernetKey 고정
+fernetKeySecretName: my-fernet-secret
+
+# DAG GitSync 설정 (GitOps 기반)
+dags:
+  gitSync:
+    enabled: true
+    repo: git@github.com:keonhoban/airflow-dags.git
+    branch: main
+    subPath: dags
+    depth: 1
+    wait: 10
+    rev: HEAD
+    sshKeySecret: airflow-git-ssh-secret
+
+# DB 연동 (외부 PostgreSQL 사용)
+postgresql:
+  enabled: false  # 내부 Postgres 비활성화
+
+data:
+  metadataSecretName: airflow-db-secret  # Secret 안의 base64된 connection 값 참조
+
+# Airflow 환경 설정
+config:
+  AIRFLOW__CORE__LOAD_EXAMPLES:
+    value: "False"
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION:
+    value: "False"
+  AIRFLOW__WEBSERVER__EXPOSE_CONFIG:
+    value: "True"
+
+# 리소스 설정 (권장)
+scheduler:
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumes:
+    - name: aws-credentials
+      secret:
+        secretName: aws-credentials-secret
+  extraVolumeMounts:
+    - name: aws-credentials
+      mountPath: /home/airflow/.aws
+      readOnly: true
+
+workers:
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumes:
+    - name: aws-credentials
+      secret:
+        secretName: aws-credentials-secret
+  extraVolumeMounts:
+    - name: aws-credentials
+      mountPath: /home/airflow/.aws
+      readOnly: true
+
+dagProcessor:
+  extraVolumes:
+    - name: aws-credentials
+      secret:
+        secretName: aws-credentials-secret
+  extraVolumeMounts:
+    - name: aws-credentials
+      mountPath: /home/airflow/.aws
+      readOnly: true
+
+# Ingress 설정 (Ingress Controller 기반 접근)
+ingress:
+  enabled: true
+
+  apiServer:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - name: airflow.local
+    tls:
+      enabled: false  # 실무에서는 true + cert-manager 연동 필요
+
+# Web UI 서비스 타입 설정
+apiServer:
+  service:
+    type: ClusterIP  # 외부 접근은 Ingress 경유
+
+# 로그 PVC 설정
+logs:
+  persistence:
+    enabled: true
+    existingClaim: airflow-logs-pvc
+
+# (선택) remote 로그 저장소 설정 (예: S3)
+# config:
+#   AIRFLOW__LOGGING__REMOTE_LOGGING: "True"
+#   AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: "s3://your-bucket-name/airflow-logs"
+#   AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID: "aws_default"

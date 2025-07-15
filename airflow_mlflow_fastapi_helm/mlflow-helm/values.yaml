@@ -1,0 +1,28 @@
+# values.yaml
+image:
+  repository: hoizz/mlflow
+  tag: with-psycopg2-and-s3
+
+env:
+  defaultArtifactRoot: s3://mlflow-artifacts-keonho
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "2Gi"
+
+service:
+  type: ClusterIP
+  port: 5000
+
+ingress:
+  enabled: true
+  className: nginx
+  host: mlflow.local
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"

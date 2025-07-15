@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-server
+  namespace: fastapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi
+  template:
+    metadata:
+      labels:
+        app: fastapi
+    spec:
+      containers:
+        - name: fastapi
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: {{ .Values.env.MLFLOW_TRACKING_URI }}
+            - name: MODEL_NAME
+              value: {{ .Values.env.MODEL_NAME }}
+            - name: MODEL_STAGE
+              value: {{ .Values.env.MODEL_STAGE }}
+          envFrom:
+            - secretRef:
+                name: aws-credentials-secret
