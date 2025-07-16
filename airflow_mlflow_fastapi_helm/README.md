@@ -35,7 +35,7 @@
 
 ## 🚀 배포 순서 요약
 
-\`\`\`bash
+```bash
 # 예시: MLflow
 cd mlflow-helm
 helm install mlflow . -n mlflow
@@ -43,7 +43,7 @@ helm install mlflow . -n mlflow
 # 예시: FastAPI
 cd fastapi-helm
 helm install fastapi . -n fastapi
-\`\`\`
+```
 
 - `kubectl`, `helm`, `docker`, `jq` 설치 필요
 - hosts 파일 수정: `fastapi.local`, `mlflow.local` 등 로컬 도메인 접근 설정
