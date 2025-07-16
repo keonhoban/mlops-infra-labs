@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: hoizz/fastapi-ml
-  tag: mlflow-model-info
+  tag: mlflow-reload
   pullPolicy: IfNotPresent
 
 service:
@@ -16,12 +16,18 @@ ingress:
   name: fastapi-ingress
   host: fastapi.local
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    #nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  paths:
+    - path: /()(.*)
+      pathType: ImplementationSpecific
 
 env:
   MLFLOW_TRACKING_URI: "http://mlflow-service.mlflow.svc.cluster.local:5000"
-  MODEL_NAME: "my_model"
-  MODEL_STAGE: "Production"
+    #MODEL_NAME: "my_model"
+    #MODEL_STAGE: "Production"
+  MODEL_NAME: "best_model"
+  MODEL_STAGE: "Staging"
 
 envFrom:
   - secretRef:

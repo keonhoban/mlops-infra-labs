@@ -1,3 +1,5 @@
+# app/main.py
+# app/main.py
 from fastapi import FastAPI, Request
 import mlflow.pyfunc
 import mlflow
@@ -8,24 +10,29 @@ app = FastAPI()
 model = None
 model_info = {}
 
-def load_model_from_mlflow():
+@app.on_event("startup")
+def load_model():
     global model, model_info
 
     tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
     model_name = os.environ.get("MODEL_NAME")
     model_stage = os.environ.get("MODEL_STAGE", "Production")
 
+    # MLflow 설정
     mlflow.set_tracking_uri(tracking_uri)
     model_uri = f"models:/{model_name}/{model_stage}"
 
+    # 모델 로딩
     model = mlflow.pyfunc.load_model(model_uri)
 
+    # 모델 버전 정보 확인
     client = MlflowClient()
     latest = client.get_latest_versions(name=model_name, stages=[model_stage])[0]
     run_id = latest.run_id
     version = latest.version
 
-    print(f"✅ Reloaded model: name={model_name}, stage={model_stage}, version={version}, run_id={run_id}")
+    # 로깅 + 저장
+    print(f"✅ Loaded model: name={model_name}, stage={model_stage}, version={version}, run_id={run_id}")
     model_info = {
         "model_name": model_name,
         "stage": model_stage,
@@ -33,10 +40,6 @@ def load_model_from_mlflow():
         "run_id": run_id,
         "model_uri": model_uri,
     }
-
-@app.on_event("startup")
-def startup_event():
-    load_model_from_mlflow()
 
 @app.get("/")
 def root():
@@ -51,11 +54,3 @@ async def predict(request: Request):
     input_data = await request.json()
     prediction = model.predict(input_data)
     return {"prediction": prediction.tolist()}
-
-@app.post("/reload")
-def reload_model():
-    try:
-        load_model_from_mlflow()
-        return {"status": "success", "message": "🔁 Model reloaded successfully."}
-    except Exception as e:
-        return {"status": "error", "message": f"Reload failed: {str(e)}"}
