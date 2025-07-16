@@ -13,7 +13,7 @@ def load_model_from_mlflow():
 
     tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
     model_name = os.environ.get("MODEL_NAME")
-    model_stage = os.environ.get("MODEL_STAGE", "Production")
+    model_stage = os.environ.get("MODEL_STAGE", "Staging")
 
     mlflow.set_tracking_uri(tracking_uri)
     model_uri = f"models:/{model_name}/{model_stage}"
