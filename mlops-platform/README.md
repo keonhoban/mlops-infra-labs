@@ -5,6 +5,27 @@
 
 ---
 
+## 🎯 What this project proves
+
+- GitOps 기반으로 **PR→CI→CD→학습→등록→서빙→관제**까지 이어지는 MLOps 자동화 루프를 구현했습니다.
+- **dev/prod 완전 분리**(namespace/label/storage/rules) 환경에서 Metrics+Logs를 통합 관제합니다.
+- 모델 변경은 **재배포 없이 Hot Reload**로 반영되며, 실패 시 DAG 기반 롤백으로 복구합니다.
+
+---
+
+## 🔗 Validation (Blog)
+
+> 자세한 아키텍처, 검증 스크린샷 및 문제 해결 참고 사항은 아래 게시물에 문서화되어 있습니다.
+
+| Area | Doc |
+| --- | --- |
+| GitOps Architecture | https://keonhoban.github.io/mlops-journey/projects/mlops_pipeline_gitops/01/ |
+| GitOps Validation | https://keonhoban.github.io/mlops-journey/projects/mlops_pipeline_gitops/02/ |
+| Observability Architecture | https://keonhoban.github.io/mlops-journey/projects/mlops_pipeline_observability/01/ |
+| Observability Validation | https://keonhoban.github.io/mlops-journey/projects/mlops_pipeline_observability/02/ |
+
+---
+
 ## 📘 Overview
 
 이 프로젝트는 **Helm 기반 MLOps 인프라**를
