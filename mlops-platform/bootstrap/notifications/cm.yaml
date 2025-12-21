@@ -1,0 +1,75 @@
+# bootstrap/notifications/cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  context: |
+    argocdUrl: https://argocd.local
+
+  # [webhook 서비스] Incoming Webhook을 사용
+  service.webhook.slack_webhook: |
+    url: $slack-webhook
+    headers:
+    - name: Content-Type
+      value: application/json
+
+  # 템플릿(웹훅 호출)
+  template.send-slack-status: |
+    webhook:
+      slack_webhook:
+        method: POST
+        body: |
+          {
+            "text": "*[{{.app.metadata.name}}]* Sync *{{.app.status.sync.status}}* → Health *{{.app.status.health.status}}*\n· Rev: `{{.app.status.sync.revision}}`\n<{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|Open in ArgoCD>",
+            "attachments": [{
+              "title": "ArgoCD · {{.app.metadata.name}}",
+              "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+              "fields": [
+                {"title": "Project", "value": "{{.app.spec.project}}", "short": true},
+                {"title": "Sync", "value": "{{.app.status.sync.status}}", "short": true},
+                {"title": "Health", "value": "{{.app.status.health.status}}", "short": true}
+              ]
+            }]
+          }
+
+  template.send-slack-failed: |
+    webhook:
+      slack_webhook:
+        method: POST
+        body: |
+          {
+            "text": "*[{{.app.metadata.name}}]* ❌ Sync *Failed*\n· Phase: `{{.app.status.operationState.phase}}`\n· Msg: `{{.app.status.operationState.message}}`\n<{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|Open in ArgoCD>"
+          }
+
+  template.send-slack-degraded: |
+    webhook:
+      slack_webhook:
+        method: POST
+        body: |
+          {
+            "text": "*[{{.app.metadata.name}}]* ⚠️ Health *Degraded*\n· Health: `{{.app.status.health.status}}`, Sync: `{{.app.status.sync.status}}`\n<{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|Open in ArgoCD>"
+          }
+
+  # 트리거: 위 webhook 템플릿으로 매핑
+  trigger.on-sync-status-change: |
+    - when: app.status.sync.status in ['Synced', 'OutOfSync']
+      send: [send-slack-status]
+
+  trigger.on-sync-failed: |
+    - when: app.status.operationState.phase in ['Error', 'Failed']
+      send: [send-slack-failed]
+
+  trigger.on-health-degraded: |
+    - when: app.status.health.status == 'Degraded'
+      send: [send-slack-degraded]
+
+  # 기본 구독: 채널이 아니라 "webhook 이름"으로
+  subscriptions: |
+    - recipients:
+        - slack_webhook
+      triggers:
+        - on-sync-status-change
+        - on-sync-failed
+        - on-health-degraded

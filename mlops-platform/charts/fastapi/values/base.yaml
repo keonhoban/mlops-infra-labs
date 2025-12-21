@@ -1,0 +1,34 @@
+replicaCount: 1
+image:
+  repository: hoizz/fastapi-custom
+  pullPolicy: IfNotPresent
+
+podSecurityContext:
+  runAsUser: 2001
+  runAsGroup: 2001
+  fsGroup: 2001
+  fsGroupChangePolicy: OnRootMismatch
+
+probes:
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    failureThreshold: 5
+
+metrics:
+  enabled: true
+  path: /metrics
+  interval: 15s
+  scrapeTimeout: 10s
