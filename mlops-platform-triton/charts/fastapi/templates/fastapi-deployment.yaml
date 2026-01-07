@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-server
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      # 🔒 NFS(root_squash) 대비: Pod 레벨 Security Context
+      securityContext:
+        runAsUser: {{ default 2001 .Values.podSecurityContext.runAsUser }}
+        runAsGroup: {{ default 2001 .Values.podSecurityContext.runAsGroup }}
+        fsGroup: {{ default 2001 .Values.podSecurityContext.fsGroup }}
+        fsGroupChangePolicy: {{ default "OnRootMismatch" .Values.podSecurityContext.fsGroupChangePolicy }}
+
+      containers:
+        - name: fastapi
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: "{{ .Values.env.MLFLOW_TRACKING_URI }}"
+            - name: MODEL_NAME
+              value: "{{ .Values.env.MODEL_NAME }}"
+            - name: ALIAS_SELECTION_MODE
+              value: "{{ .Values.env.ALIAS_SELECTION_MODE }}"
+            - name: DEFAULT_ALIAS
+              value: "{{ .Values.env.DEFAULT_ALIAS }}"
+            - name: CANARY_PERCENT
+              value: "{{ .Values.env.CANARY_PERCENT }}"
+
+          readinessProbe:
+{{ toYaml .Values.probes.readinessProbe | indent 12 }}
+
+          livenessProbe:
+{{ toYaml .Values.probes.livenessProbe | indent 12 }}
+
+{{- with .Values.envFrom }}
+          envFrom:
+{{ toYaml . | indent 12 }}
+{{- end }}
+{{- with .Values.volumeMounts }}
+          volumeMounts:
+{{ toYaml . | indent 12 }}
+{{- end }}
+
+      volumes:
+{{ toYaml .Values.volumes | indent 8 }}

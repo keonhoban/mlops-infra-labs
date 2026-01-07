@@ -1,0 +1,150 @@
+name: Helm CI
+
+on:
+  pull_request:
+    paths:
+      - 'charts/**'
+      - 'envs/**'
+      - 'apps/**'
+      - '.github/workflows/ci-helm-validate.yaml'
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: helm-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint & Render & Validate (${{ matrix.env }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, prod]
+        chart: [airflow, fastapi, mlflow]
+
+    env:
+      KUBE_VERSION: "1.30.0"
+      # 3rd-party kinds는 스키마 검증에서 스킵(ArgoCD, cert-manager, SealedSecret 등)
+      SKIP_KINDS: "Application,ApplicationSet,AppProject,SealedSecret,Certificate,CertificateRequest,Issuer,ClusterIssuer,Order,Challenge"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm (match local)
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.18.3
+
+      - name: Install tools (yamllint, kubeconform)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y yamllint
+          curl -sSL -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          sudo tar -C /usr/local/bin -xzf kubeconform.tar.gz kubeconform
+          kubeconform -v
+
+      - name: YAML style check (repo-wide)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files -z '*.yml' '*.yaml' \
+            ':!:charts/**/templates/**' \
+            ':!:charts/**/charts/**' \
+            ':!:envs/**/sealed-secrets/**' \
+            ':!:bootstrap/notifications/secret-sealed.yaml' \
+          | xargs -0 -r yamllint -s
+
+      - name: Helm lint (strict)
+        working-directory: charts/${{ matrix.chart }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f values/base.yaml && -f values/${{ matrix.env }}.yaml ]]; then
+            helm lint . -f values/base.yaml -f values/${{ matrix.env }}.yaml --strict
+          elif [[ -f values/${{ matrix.env }}.yaml ]]; then
+            helm lint . -f values/${{ matrix.env }}.yaml --strict
+          else
+            helm lint . --strict
+          fi
+
+      - name: Render manifests with helm template
+        id: render
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rendered
+          CHART="charts/${{ matrix.chart }}"
+          OUT="/tmp/rendered/${{ matrix.chart }}-${{ matrix.env }}.yaml"
+          NS="${{ matrix.chart }}-${{ matrix.env }}"
+
+          if [[ -f "$CHART/values/base.yaml" && -f "$CHART/values/${{ matrix.env }}.yaml" ]]; then
+            helm template ${{ matrix.chart }} "$CHART" -n "$NS" \
+              -f "$CHART/values/base.yaml" -f "$CHART/values/${{ matrix.env }}.yaml" > "$OUT"
+          elif [[ -f "$CHART/values/${{ matrix.env }}.yaml" ]]; then
+            helm template ${{ matrix.chart }} "$CHART" -n "$NS" \
+              -f "$CHART/values/${{ matrix.env }}.yaml" > "$OUT"
+          else
+            helm template ${{ matrix.chart }} "$CHART" -n "$NS" > "$OUT"
+          fi
+
+          echo "out=$OUT" >> "$GITHUB_OUTPUT"
+          test -s "$OUT"
+
+      - name: kubeconform (core K8s kinds only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubeconform \
+            -kubernetes-version "${KUBE_VERSION}" \
+            -ignore-missing-schemas \
+            -skip "${SKIP_KINDS}" \
+            -summary \
+            "${{ steps.render.outputs.out }}"
+
+      - name: Validate env raw manifests (envs/${{ matrix.env }})
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # sealed-secrets는 제외하고 env/*.yaml만 검사
+          mapfile -t FILES < <(find "envs/${{ matrix.env }}" -type f -name '*.yaml' ! -path "*/sealed-secrets/*")
+          if (( ${#FILES[@]} )); then
+            echo "Validating ${#FILES[@]} files under envs/${{ matrix.env }}"
+            yamllint -s "${FILES[@]}"
+            kubeconform -kubernetes-version "${KUBE_VERSION}" \
+              -ignore-missing-schemas -skip "${SKIP_KINDS}" -summary "${FILES[@]}"
+          else
+            echo "No env files found under envs/${{ matrix.env }}"
+          fi
+
+      - name: Validate apps/ (Argo CD objects etc.)
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          FILES=(apps/*.yaml)
+          if (( ${#FILES[@]} )); then
+            echo "Validating ${#FILES[@]} files under apps/"
+            yamllint -s "${FILES[@]}"
+            kubeconform -kubernetes-version "${KUBE_VERSION}" \
+              -ignore-missing-schemas -skip "${SKIP_KINDS}" -summary "${FILES[@]}"
+          else
+            echo "No files under apps/"
+          fi
+
+      - name: Upload rendered manifests
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-${{ matrix.chart }}-${{ matrix.env }}
+          path: /tmp/rendered/${{ matrix.chart }}-${{ matrix.env }}.yaml
+          if-no-files-found: warn

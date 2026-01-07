@@ -1,0 +1,7 @@
+replicaCount: 1
+
+global:
+  env: dev
+
+monitoring:
+  releaseLabel: monitoring-dev
