@@ -1,0 +1,7 @@
+replicaCount: 1
+
+global:
+  env: prod
+
+monitoring:
+  releaseLabel: monitoring-prod

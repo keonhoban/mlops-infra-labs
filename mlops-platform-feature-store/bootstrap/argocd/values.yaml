@@ -1,0 +1,26 @@
+configs:
+  cm:
+    url: https://argocd.local
+
+configsParams:
+  server.insecure: "false"
+
+controller:
+  enableStatefulSet: true
+crds:
+  install: true
+repoServer:
+  replicas: 2
+applicationSet:
+  replicaCount: 1
+server:
+  replicas: 2
+  service:
+    type: ClusterIP
+dex:
+  enabled: false
+redis:
+  enabled: true
+global:
+  image:
+    tag: v2.12.3
